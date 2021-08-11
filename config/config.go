@@ -2,6 +2,7 @@ package config
 
 import (
 	"AntShell-Go/utils"
+	"github.com/mitchellh/go-homedir"
 	"github.com/ooppwwqq0/goconfig"
 	"os"
 	"path"
@@ -56,7 +57,7 @@ func FindConfig() (configPath string) {
 	pathList = append(pathList, path.Join(DEFAULT_PATH, CONFIG_NAME))
 	pathList = append(pathList, path.Join("/etc/antshell/", CONFIG_NAME))
 	for _, config := range pathList {
-		configPath = utils.ExpendUser(config)
+		configPath, _ = homedir.Expand(config)
 		if utils.IsFile(configPath) {
 			break
 		}

@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# 获取工作目录
+readonly WORK_DIR=$(cd $(dirname $0); pwd)
+readonly BASE_DIR=$(basename ${WORK_DIR})
+
+GOOS=darwin GOARCH=amd64 go build -o ${BASE_DIR} -mod vendor
