@@ -14,13 +14,13 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 )
 
 const (
 	BastionOn  = 1
+	BastionOff = 0
 	TypeKey    = "authKey"
 	TypePasswd = "password"
 )
@@ -163,9 +163,7 @@ func (client *ClientSSH) Connection(sudo string) {
 			t := time.NewTimer(time.Millisecond * 100)
 			select {
 			case d := <-r:
-				if !strings.HasPrefix(d, "uptime") {
-					fmt.Print(d)
-				}
+				fmt.Print(d)
 			case <-t.C:
 				t.Stop()
 				flag <- true
