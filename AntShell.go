@@ -67,6 +67,13 @@ func init() {
 	flag.Parse()
 	if len(flag.Args()) != 0 {
 		option.Manager.Argv = flag.Args()[0]
+		/*
+			当flag遇到non-flag时会停止继续解析，将从non-flag开始的所有参数认定为non-flag
+			这时所有后面的参数都不能正常运行
+			通过源码分析可以发现flag.Parse实际是执行了flag.CommandLine.Parse方法
+			那我们就可以通过以下方法让其他参数继续解析
+		*/
+		flag.CommandLine.Parse(flag.Args()[1:])
 	}
 }
 
