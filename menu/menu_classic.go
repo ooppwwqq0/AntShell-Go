@@ -135,10 +135,9 @@ func (menu *Classic) View(argv interface{}, num int, search string, mode int, cu
 	hostPtr := models.NewHostPtr()
 
 	// 无变量参数
-	switch argv.(type) {
-	case int:
-		num = utils.IF(argv.(int) != 0, argv.(int), num).(int)
-	case string:
+	if n, err := strconv.Atoi(argv.(string)); err == nil {
+		num = utils.IF(n != 0, n, num).(int)
+	} else {
 		hostPtr.SetSearch(argv.(string))
 	}
 
