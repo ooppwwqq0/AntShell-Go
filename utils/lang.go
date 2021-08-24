@@ -12,7 +12,7 @@ func init() {
 			"version": "打印版本信息并退出",
 			"help":    "打印帮助信息并退出",
 			"add":     "添加主机信息并登陆",
-			"commod":  "主机远程执行命令",
+			"command": "主机远程执行命令",
 			"edit":    "编辑主机信息",
 			"delete":  "删除主机信息并退出",
 			"file":    "文件名",
@@ -36,13 +36,14 @@ func init() {
 			"bastion": "堡垒机模式",
 			"sudo":    "指定sudo用户",
 			"engine":  "指定引擎",
+			"totp":    "打印 totp",
 		},
 		"en": {
 			"init":    "Initialize the configuration file and the database",
 			"version": "show program's version number and exit",
 			"help":    "show this help message and exit",
 			"add":     "add host info and login",
-			"commod":  "host execute command",
+			"command": "host execute command",
 			"edit":    "edit host info",
 			"delete":  "delete host info and exit",
 			"file":    "file name",
@@ -66,6 +67,7 @@ func init() {
 			"bastion": "bastion mode",
 			"sudo":    "sudo user",
 			"engine":  "choose engine",
+			"totp":    "print totp",
 		},
 	}
 }

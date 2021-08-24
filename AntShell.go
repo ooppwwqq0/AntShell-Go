@@ -8,8 +8,8 @@ import (
 	"AntShell-Go/utils"
 	"flag"
 	"fmt"
+	"github.com/astaxie/beego/logs"
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 )
@@ -38,15 +38,29 @@ type ManagerOption struct {
 	Bastion bool
 	Version bool
 	Argv    interface{}
+	Totp    bool
 }
 
 var (
-	c      = config.LoadConfig()
+	c      config.Config
 	option Option
 	client engine.ClientSSH
 )
 
 func init() {
+	var err error
+	c, err = config.LoadConfig()
+	if err != nil {
+		config.InitConfig()
+		c, err = config.LoadConfig()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	}
+
+	models.Init(c)
+
 	lang := utils.LANG[c.Default.LangSet]
 	flag.BoolVar(&option.Manager.List, "l", false, lang["list"])
 	flag.IntVar(&option.Manager.Mode, "m", 0, lang["mode"])
@@ -54,6 +68,7 @@ func init() {
 	flag.StringVar(&option.Manager.Search, "s", "", lang["search"])
 	flag.BoolVar(&option.Manager.Bastion, "B", false, lang["bastion"])
 	flag.BoolVar(&option.Manager.Version, "version", false, lang["version"])
+	flag.BoolVar(&option.Manager.Totp, "totp", false, lang["totp"])
 
 	flag.StringVar(&option.Host.Add, "a", "", lang["add"])
 	flag.BoolVar(&option.Host.Edit, "e", false, lang["edit"])
@@ -114,56 +129,16 @@ Usage: antshell|a [ -h | --version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ 
 }
 
 func GetHostByConfig(c config.Config) (host models.Hosts) {
+	defaultPort, _ := strconv.Atoi(c.User.Port)
 	host = models.Hosts{
 		Ip:      option.Host.Add,
 		Sudo:    option.Host.Sudo,
 		Name:    utils.IF(option.Host.Name != "", option.Host.Name, option.Host.Add).(string),
 		User:    utils.IF(option.Host.User != "", option.Host.User, c.User.UserName).(string),
 		Passwd:  utils.IF(option.Host.Passwd != "", option.Host.Passwd, c.User.Password).(string),
-		Port:    utils.IF(option.Host.Port != 0, option.Host.Port, c.User.Port).(int),
+		Port:    utils.IF(option.Host.Port != 0, option.Host.Port, defaultPort).(int),
 		Bastion: utils.IF(option.Manager.Bastion, engine.BastionOn, engine.BastionOff).(int),
 	}
-	return
-}
-
-func GetUserInput(title string, value interface{}, defaultValue interface{}, valueType string, isNone bool) (newValue interface{}) {
-	/*
-		编辑主机信息用户交互
-		title: 显示标题
-		value: 命令行参数值，优先于default值
-		default: 默认值，原数据库中数据
-		vType: 指定用户输入值
-		isNone: 用户输入是否可为空，默认False，用户输入为空时使用默认值
-	*/
-	msg := menu.ColorMsg("", menu.BLUEL, false, false, "")
-
-	switch valueType {
-	case "string":
-		var input string
-		fmt.Printf(msg, fmt.Sprintf("New %s [defalut: %s] [new: %s] >> ", title, defaultValue, value))
-		fmt.Scanln(&input)
-		if input == "" && !isNone {
-			newValue = utils.IF(value != "", value, defaultValue)
-		} else {
-			newValue = input
-		}
-	case "int":
-		var input int
-		value = utils.IF(value != 0 && !isNone, strconv.Itoa(value.(int)), "")
-		fmt.Printf(msg, fmt.Sprintf("New %s [defalut: %d] [new: %s] >> ", title, defaultValue, value))
-		fmt.Scanln(&input)
-		if input == 0 && !isNone {
-			newValue = utils.IF(value != "", value, defaultValue)
-			fmt.Println("ddd")
-		} else {
-			newValue = input
-		}
-		newValue = strconv.Itoa(newValue.(int))
-
-	}
-	fmt.Println(newValue)
-	fmt.Println(reflect.TypeOf(newValue))
-
 	return
 }
 
@@ -242,7 +217,19 @@ func main() {
 		fmt.Printf("%s %s\n", utils.ProgramName, utils.Version)
 		os.Exit(0)
 	}
+
+	if option.Manager.Totp {
+		fmt.Println(utils.GetPasswdByTotp(c.Bastion.Bastion_Totp))
+		os.Exit(0)
+	}
 	hostPtr := models.NewHostPtr()
+	hosts := hostPtr.GetAll()
+	if len(hosts) == 0 {
+		logs.Warn("Please Add Host Record!")
+		logs.Info("a -help")
+		os.Exit(1)
+	}
+
 	m := menu.New(c)
 
 	var host models.Hosts

@@ -89,6 +89,19 @@ func GetPasswdByTotp(totp string) (passwd string) {
 	return
 }
 
+func ExecCommand(c string) (output string, err error) {
+	cmd := exec.Command(c)
+	cmd.Stdin = os.Stdin
+	var out []byte
+	out, err = cmd.Output()
+	if err != nil {
+		logs.Error(err)
+		os.Exit(1)
+	}
+	output = string(out)
+	return
+}
+
 // 判断值是否在对象中
 func IsInArray(item interface{}, array interface{}) (bolFind bool) {
 

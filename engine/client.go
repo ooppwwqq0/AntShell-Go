@@ -262,8 +262,21 @@ func (client *ClientSSH) conn() {
 
 }
 func GetBastionPasswd(bastion config.BastionSection) (bastionPasswd string) {
-	if bastion.Bastion_Totp != "" {
+	// passwd缓存
+
+	//Todo 可能需要重新梳理这里的逻辑和优先级。目前简单处理部分场景
+	if bastion.Bastion_Passwd_Prefix != "" && bastion.Bastion_Totp != "" {
 		bastionPasswd = bastion.Bastion_Passwd_Prefix + utils.GetPasswdByTotp(bastion.Bastion_Totp)
+	} else if bastion.Bastion_Passwd_Prefix == "" && bastion.Bastion_Totp != "" {
+		var bastionPasswdPrefix string
+		for {
+			fmt.Print("PIN:")
+			fmt.Scanln(&bastionPasswdPrefix)
+			if bastionPasswdPrefix != "" {
+				break
+			}
+		}
+		bastionPasswd = bastionPasswdPrefix + utils.GetPasswdByTotp(bastion.Bastion_Totp)
 	} else if bastion.Bastion_Passwd != "" {
 		bastionPasswd = bastion.Bastion_Passwd_Prefix + bastion.Bastion_Passwd
 	} else {
@@ -271,8 +284,14 @@ func GetBastionPasswd(bastion config.BastionSection) (bastionPasswd string) {
 			"%s@%s:%s's password: PIN:****** + Token:",
 			bastion.Bastion_User, bastion.Bastion_Host, bastion.Bastion_Port,
 		)
-		fmt.Print(msg)
-		fmt.Scanln(&bastionPasswd)
+		for {
+			fmt.Print(msg)
+			fmt.Scanln(&bastionPasswd)
+			if bastionPasswd != "" {
+				break
+			}
+		}
+
 	}
 	return
 }

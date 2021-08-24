@@ -1,7 +1,10 @@
 package config
 
 import (
+	"AntShell-Go/asset"
 	"AntShell-Go/utils"
+	"errors"
+	"github.com/astaxie/beego/logs"
 	"github.com/mitchellh/go-homedir"
 	"github.com/ooppwwqq0/goconfig"
 	"os"
@@ -9,11 +12,12 @@ import (
 )
 
 const (
-	INI_TYPE     = "ini"
-	YAML_TYPE    = "yaml"
-	DEFAULT_PATH = "~/.antshell"
-	CONFIG_NAME  = "antshell.cfg"
-	ENV_PATH     = "ANTSHELL_CONFIG"
+	TypeINI     = "ini"
+	TypeYaml    = "yaml"
+	DefaultPath = "~/.antshell"
+	EtcPath     = "/etc/antshell/"
+	EnvPath     = "ANTSHELL_CONFIG"
+	ConfName    = "antshell.cfg"
 )
 
 type Config struct {
@@ -47,30 +51,55 @@ type BastionSection struct {
 	Bastion_Totp          string `ini:"BASTION_TOTP"`
 }
 
-func FindConfig() (configPath string) {
+/*
+获取配置文件路径
+优先级：环境变量（ANTSHELL_CONFIG）> DefaultPath > EtcPath
+*/
+func FindConfig() (configPath string, err error) {
 
 	var pathList []string
-	customPath := os.Getenv(ENV_PATH)
+	customPath := os.Getenv(EnvPath)
 	if utils.IsDir(customPath) {
-		pathList = append(pathList, path.Join(customPath, CONFIG_NAME))
+		pathList = append(pathList, path.Join(customPath, ConfName))
 	}
-	pathList = append(pathList, path.Join(DEFAULT_PATH, CONFIG_NAME))
-	pathList = append(pathList, path.Join("/etc/antshell/", CONFIG_NAME))
+	pathList = append(pathList, path.Join(DefaultPath, ConfName))
+	pathList = append(pathList, path.Join(EtcPath, ConfName))
 	for _, config := range pathList {
 		configPath, _ = homedir.Expand(config)
 		if utils.IsFile(configPath) {
-			break
+			return configPath, err
 		}
 	}
+	err = errors.New("找不到配置文件")
 	return
 }
 
-func LoadConfig() (config Config) {
-	configPath := FindConfig()
-	cfg, err := goconfig.LoadConfigFile(configPath)
+// 加载配置文件
+func LoadConfig() (config Config, err error) {
+	configPath, err := FindConfig()
 	if err != nil {
-		panic("错误")
+		return config, err
+	}
+
+	var cfg *goconfig.ConfigFile
+	cfg, err = goconfig.LoadConfigFile(configPath)
+	if err != nil {
+		return config, err
 	}
 	err = cfg.Decode(&config)
 	return
+}
+
+// 初始化配置文件
+func InitConfig() {
+	logs.Info("开始初始化配置文件")
+	defaultPath, _ := homedir.Expand(DefaultPath)
+	if !utils.IsExist(defaultPath) {
+		logs.Info("创建默认配置文件路径:", defaultPath)
+		os.MkdirAll(defaultPath, 0755)
+	}
+	if !utils.IsFile(path.Join(defaultPath, ConfName)) {
+		logs.Info("创建默认配置文件:", path.Join(defaultPath, ConfName))
+		asset.RestoreAssets(defaultPath, ConfName)
+	}
 }
