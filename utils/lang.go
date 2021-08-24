@@ -37,6 +37,7 @@ func init() {
 			"sudo":    "指定sudo用户",
 			"engine":  "指定引擎",
 			"totp":    "打印 totp",
+			"path":    "初始目录",
 		},
 		"en": {
 			"init":    "Initialize the configuration file and the database",
@@ -68,6 +69,7 @@ func init() {
 			"sudo":    "sudo user",
 			"engine":  "choose engine",
 			"totp":    "print totp",
+			"path":    "default path",
 		},
 	}
 }

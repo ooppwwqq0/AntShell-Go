@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -107,7 +108,7 @@ func (client *ClientSSH) GetSession() (session *ssh.Session, err error) {
 	return
 }
 
-func (client *ClientSSH) Connection(sudo string) {
+func (client *ClientSSH) Connection(sudo string, path string) {
 	client.GetSSHInfo()
 	session, err := client.GetSession()
 	client.session = session
@@ -141,6 +142,11 @@ func (client *ClientSSH) Connection(sudo string) {
 		if client.host.Sudo != "" {
 			session.Chan.Write([]byte("sudo -iu " + utils.IF(sudo != "", sudo, client.host.Sudo).(string) + "\r"))
 		}
+		if path != "" {
+			session.Chan.Write([]byte("cd " + path + "\r"))
+		} else if client.host.Path != "" {
+			session.Chan.Write([]byte("cd " + client.host.Path + "\r"))
+		}
 	}()
 
 	// 释放终端之前读取终端返回信息发送管道
@@ -163,6 +169,9 @@ func (client *ClientSSH) Connection(sudo string) {
 			t := time.NewTimer(time.Millisecond * 100)
 			select {
 			case d := <-r:
+				if strings.HasPrefix(d, "cd") || strings.HasPrefix(d, "export") || strings.HasPrefix(d, "sudo") {
+					continue
+				}
 				fmt.Print(d)
 			case <-t.C:
 				t.Stop()

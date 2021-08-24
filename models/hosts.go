@@ -22,6 +22,7 @@ type Hosts struct {
 	Port     int
 	Sudo     string
 	Bastion  int
+	Path     string
 	CreateAt time.Time
 	UpdateAt time.Time
 }
@@ -48,6 +49,8 @@ func (h *HostsPtr) init() {
 	h.orm.Using("default")
 	h.query = h.orm.QueryTable(new(Hosts))
 }
+
+// 获取全部数据
 func (h *HostsPtr) GetAll() (rows []Hosts) {
 	h.query.All(&h.Rows)
 	rows = h.Rows
@@ -89,6 +92,7 @@ func (h *HostsPtr) Search(search string, blankReturn bool, match bool) (rows []H
 	return
 }
 
+// 添加主机记录
 func (h *HostsPtr) AddHost(host Hosts) (newHost Hosts) {
 	cond := orm.NewCondition()
 	cond = cond.And("ip", host.Ip).And("user", host.User).And("port", host.Port)
@@ -104,9 +108,19 @@ func (h *HostsPtr) AddHost(host Hosts) (newHost Hosts) {
 	return host
 }
 
+// 删除主机记录
 func (h *HostsPtr) DelHost(host Hosts) (ok bool) {
 	if _, err := h.orm.Delete(&host); err == nil {
 		ok = true
+	}
+	return
+}
+
+// 修改主机记录
+func (h *HostsPtr) UpdateHost(host Hosts) (n int64, err error) {
+	n, err = h.orm.Update(&host)
+	if err != nil {
+		fmt.Println(err)
 	}
 	return
 }

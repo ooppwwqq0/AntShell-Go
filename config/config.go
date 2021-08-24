@@ -40,6 +40,7 @@ type UserSection struct {
 	UserName string `ini:"USERNAME"`
 	Password string `ini:"PASSWORD"`
 	Port     string `ini:"PORT"`
+	Path     string `ini:"PATH"`
 }
 
 type BastionSection struct {

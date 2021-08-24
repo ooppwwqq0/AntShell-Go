@@ -28,6 +28,7 @@ type HostOption struct {
 	Passwd string
 	Port   int
 	Sudo   string
+	Path   string
 }
 
 type ManagerOption struct {
@@ -78,6 +79,7 @@ func init() {
 	flag.StringVar(&option.Host.Passwd, "passwd", "", lang["passwd"])
 	flag.IntVar(&option.Host.Port, "port", 0, lang["port"])
 	flag.StringVar(&option.Host.Sudo, "sudo", "", lang["sudo"])
+	flag.StringVar(&option.Host.Path, "path", "", lang["path"])
 	flag.Usage = usage
 	flag.Parse()
 	if len(flag.Args()) != 0 {
@@ -138,6 +140,7 @@ func GetHostByConfig(c config.Config) (host models.Hosts) {
 		Passwd:  utils.IF(option.Host.Passwd != "", option.Host.Passwd, c.User.Password).(string),
 		Port:    utils.IF(option.Host.Port != 0, option.Host.Port, defaultPort).(int),
 		Bastion: utils.IF(option.Manager.Bastion, engine.BastionOn, engine.BastionOff).(int),
+		Path:    utils.IF(option.Host.Path != "", option.Host.Path, c.User.Path).(string),
 	}
 	return
 }
@@ -199,12 +202,12 @@ func GetHostByUser(host models.Hosts) (newHost models.Hosts) {
 		newHost.Sudo = GetUserInputStr("Sudo", option.Host.Sudo, host.Sudo, false)
 		optionBastion := utils.IF(option.Manager.Bastion, engine.BastionOn, engine.BastionOff).(int)
 		newHost.Bastion = GetUserInputInt("Bastion", optionBastion, host.Bastion, true)
-		fmt.Println(newHost)
+		newHost.Path = GetUserInputStr("Path", option.Host.Path, host.Path, false)
+
 		menu.ColorMsg("Confirm [ y|n ] >> ", menu.GREEN, true, false, "")
 		fmt.Scanln(&input)
 
 		if strings.ToLower(input) == "y" {
-			fmt.Println(newHost)
 			break
 		}
 
@@ -258,10 +261,11 @@ func main() {
 
 	switch {
 	case option.Host.Edit:
-		fmt.Println(host)
-		newHost := GetHostByUser(host)
-		fmt.Println(newHost)
-		os.Exit(0)
+		host = GetHostByUser(host)
+		_, err := hostPtr.UpdateHost(host)
+		if err != nil {
+			os.Exit(1)
+		}
 	case option.Host.Delete:
 		var input string
 		for {
@@ -280,6 +284,6 @@ func main() {
 	}
 
 	client.Init(host, c)
-	client.Connection(option.Host.Sudo)
+	client.Connection(option.Host.Sudo, option.Host.Path)
 	os.Exit(0)
 }
