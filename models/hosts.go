@@ -52,7 +52,7 @@ func (h *HostsPtr) init() {
 
 // 获取全部数据
 func (h *HostsPtr) GetAll() (rows []Hosts) {
-	h.query.All(&h.Rows)
+	h.query.OrderBy("-sort").All(&h.Rows)
 	rows = h.Rows
 	return
 }
@@ -135,4 +135,10 @@ func (h *HostsPtr) SetSearch(search string) {
 // 清除搜索词
 func (h *HostsPtr) ClearSearch() {
 	h.search = []string{}
+}
+
+// 主机记录热度加1
+func (h *HostsPtr) Sort(host Hosts, offset int) {
+	host.Sort += offset
+	h.orm.Update(&host, "sort")
 }

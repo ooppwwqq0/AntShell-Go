@@ -29,6 +29,7 @@ type HostOption struct {
 	Port   int
 	Sudo   string
 	Path   string
+	Sort   bool
 }
 
 type ManagerOption struct {
@@ -80,6 +81,8 @@ func init() {
 	flag.IntVar(&option.Host.Port, "port", 0, lang["port"])
 	flag.StringVar(&option.Host.Sudo, "sudo", "", lang["sudo"])
 	flag.StringVar(&option.Host.Path, "path", "", lang["path"])
+	flag.BoolVar(&option.Host.Sort, "sort", false, lang["sort"])
+
 	flag.Usage = usage
 	flag.Parse()
 	if len(flag.Args()) != 0 {
@@ -238,7 +241,6 @@ func main() {
 	var host models.Hosts
 	switch {
 	case option.Manager.List:
-		hosts := hostPtr.GetAll()
 		menu.BannerPrint(c)
 		m.Print(hosts, option.Manager.Mode, menu.DefaultLimit, menu.DefaultSize, false)
 		os.Exit(0)
@@ -283,6 +285,18 @@ func main() {
 		}
 	}
 
+	if option.Host.Sort {
+		hostPtr.Sort(host, 10)
+		logs.Info(
+			fmt.Sprintf("主机记录：%s(%s@%s:%d)，排序已上升！",
+				host.Name, utils.IF(host.Sudo != "", host.Sudo, host.User).(string), host.Ip, host.Port,
+			),
+		)
+		os.Exit(0)
+	}
+
+	// 将选中主机热度加1，用于排序
+	go hostPtr.Sort(host, 1)
 	client.Init(host, c)
 	client.Connection(option.Host.Sudo, option.Host.Path)
 	os.Exit(0)

@@ -38,6 +38,7 @@ func init() {
 			"engine":  "指定引擎",
 			"totp":    "打印 totp",
 			"path":    "初始目录",
+			"sort":    "排序",
 		},
 		"en": {
 			"init":    "Initialize the configuration file and the database",
@@ -70,6 +71,7 @@ func init() {
 			"engine":  "choose engine",
 			"totp":    "print totp",
 			"path":    "default path",
+			"sort":    "sort",
 		},
 	}
 }
