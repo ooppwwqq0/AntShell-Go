@@ -9,30 +9,19 @@ import (
 const (
 	PolicyDefault = "default"
 	PolicyRandom  = "random"
-)
-
-var (
-	ProgramName string
-	Version     string
-	Author      string
-	GitHub      string
-	Banner      string
-	BannerList  []string
-)
-
-func init() {
-
-	ProgramName = "AntShell"
-	Version = "0.7.9"
-	Author = "Casstiel"
-	GitHub = "https://github.com/ooppwwqq0/AntShell-Go"
-	Banner = `
+	ProgramName   = "AntShell"
+	Version       = "0.7.9"
+	Author        = "Casstiel"
+	GitHub        = "https://github.com/ooppwwqq0/AntShell-Go"
+	Banner        = `
  _____     _   _____ _       _ _
 |  _  |___| |_|   __| |_ ___| | |
 |     |   |  _|__   |   | -_| | |
 |__|__|_|_|_| |_____|_|_|___|_|_|
 `
+)
 
+var (
 	BannerList = []string{
 		`
  _____     _   _____ _       _ _
@@ -172,7 +161,7 @@ func init() {
     |___|    |___|  |___|   :         |___|   :/   |______/|______/
 `,
 	}
-}
+)
 
 func GetBanner(policy string) (banner string) {
 	switch policy {
