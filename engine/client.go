@@ -149,7 +149,6 @@ func (client *ClientSSH) Connection(sudo string, path string) {
 	}()
 
 	// 释放终端之前读取终端返回信息发送管道
-	// 构建一个信道, 一端将数据远程主机的数据写入, 一段读取数据写入ws
 	r := make(chan string)
 	go func() {
 		br := bufio.NewReader(session.Chan)
@@ -161,7 +160,6 @@ func (client *ClientSSH) Connection(sudo string, path string) {
 	}()
 
 	// 读取管道信息输出
-	// 构建一个信道，判断终端信息读取完成
 	flag := make(chan bool)
 	go func() {
 		for {
@@ -172,6 +170,7 @@ func (client *ClientSSH) Connection(sudo string, path string) {
 					continue
 				}
 				fmt.Print(d)
+				t = time.NewTimer(time.Millisecond * 100)
 			case <-t.C:
 				t.Stop()
 				flag <- true
