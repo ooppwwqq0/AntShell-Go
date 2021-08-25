@@ -135,7 +135,9 @@ Usage: antshell|a [ -h | -version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ -
 	a app01 -n 2
 	a -s 10.0.0.1 -n 1
 	a -s app01 -n 2
-`)
+GitHub: %s
+`, utils.GitHub)
+
 }
 
 func GetHostByConfig(c config.Config) (host models.Hosts) {
