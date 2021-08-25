@@ -99,8 +99,8 @@ func init() {
 
 func usage() {
 	fmt.Fprintf(os.Stderr, `AntShell version: AntShell/1.0
-Usage: antshell|a [ -h | --version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ -A ] [ -B ]
-        [ -e | -d ip | -a ip [--name tag | --user root | --passwd *** | --port 22 | --sudo root ] ]
+Usage: antshell|a [ -h | -version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ -A ] [ -B ]
+        [ -e | -d ip | -sort | -a ip [-name tag | -user root | -passwd *** | -port 22 | -sudo root | -path /tmp] ]
 `)
 	flag.PrintDefaults()
 	fmt.Fprintf(os.Stderr, `
@@ -111,6 +111,7 @@ Usage: antshell|a [ -h | --version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ 
 	a -a 10.0.0.1 -name app01 -user root -passwd 123456 
 	a -a 10.0.0.1 -name app01 -user root -passwd 123456 -port 22022
 	a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -sudo root
+	a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -path /tmp
 	a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -port 22022 -sudo root -B
 # Delete host record
 	a -d 10.0.0.1
@@ -122,6 +123,10 @@ Usage: antshell|a [ -h | --version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ 
 # List host record
 	a -l
 	a -l -m 2
+# Sort host record +10
+	a -sort
+	a -sort -n 1
+	a -sort app01 -n 1
 # Login host
 	a
 	a 2

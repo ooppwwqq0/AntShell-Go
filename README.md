@@ -112,13 +112,12 @@ a -l  0.01s user 0.01s system 63% cpu 0.035 total
 
 ```
 AntShell version: AntShell/1.0
-Usage: antshell|a [ -h | --version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ -A ] [ -B ]
-        [ -e | -d ip | -a ip [--name tag | --user root | --passwd *** | --port 22 | --sudo root ] ]
+Usage: antshell|a [ -h | -version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ -A ] [ -B ]
+        [ -e | -d ip | -sort | -a ip [-name tag | -user root | -passwd *** | -port 22 | -sudo root | -path /tmp] ]
   -B	堡垒机模式
   -a string
     	添加主机信息并登陆
-  -d string
-    	删除主机信息并退出
+  -d	删除主机信息并退出
   -e	编辑主机信息
   -l	输出主机列表并退出
   -m int
@@ -129,12 +128,18 @@ Usage: antshell|a [ -h | --version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ 
     	本地主机别名
   -passwd string
     	密码
+  -path string
+    	初始目录
   -port int
     	端口
   -s string
     	模糊匹配主机信息
+  -sort
+    	排序
   -sudo string
     	指定sudo用户
+  -totp
+    	打印 totp
   -user string
     	登录主机用户名
   -version
@@ -147,6 +152,7 @@ Usage: antshell|a [ -h | --version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ 
 	a -a 10.0.0.1 -name app01 -user root -passwd 123456
 	a -a 10.0.0.1 -name app01 -user root -passwd 123456 -port 22022
 	a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -sudo root
+	a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -path /tmp
 	a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -port 22022 -sudo root -B
 # Delete host record
 	a -d 10.0.0.1
@@ -158,6 +164,10 @@ Usage: antshell|a [ -h | --version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ 
 # List host record
 	a -l
 	a -l -m 2
+# Sort host record +10
+	a -sort
+	a -sort -n 1
+	a -sort app01 -n 1
 # Login host
 	a
 	a 2
