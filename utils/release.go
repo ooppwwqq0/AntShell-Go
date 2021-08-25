@@ -10,7 +10,7 @@ const (
 	PolicyDefault = "default"
 	PolicyRandom  = "random"
 	ProgramName   = "AntShell"
-	Version       = "0.7.9"
+	Version       = "1.0"
 	Author        = "Casstiel"
 	GitHub        = "https://github.com/ooppwwqq0/AntShell-Go"
 	Banner        = `

@@ -223,27 +223,9 @@ func GetHostByUser(host models.Hosts) (newHost models.Hosts) {
 	return
 }
 
-func main() {
-	if option.Manager.Version {
-		fmt.Printf("%s %s\n", utils.ProgramName, utils.Version)
-		os.Exit(0)
-	}
-
-	if option.Manager.Totp {
-		fmt.Println(utils.GetPasswdByTotp(c.Bastion.Bastion_Totp))
-		os.Exit(0)
-	}
-	hostPtr := models.NewHostPtr()
-	hosts := hostPtr.GetAll()
-	if len(hosts) == 0 {
-		logs.Warn("Please Add Host Record!")
-		logs.Info("a -help")
-		os.Exit(1)
-	}
-
+func GetHostByOption(hosts []models.Hosts, hostPtr *models.HostsPtr) (host models.Hosts) {
 	m := menu.New(c)
 
-	var host models.Hosts
 	switch {
 	case option.Manager.List:
 		menu.BannerPrint(c)
@@ -299,6 +281,29 @@ func main() {
 		)
 		os.Exit(0)
 	}
+	return
+}
+
+func main() {
+	if option.Manager.Version {
+		fmt.Printf("%s %s\n", utils.ProgramName, utils.Version)
+		os.Exit(0)
+	}
+
+	if option.Manager.Totp {
+		fmt.Println(utils.GetPasswdByTotp(c.Bastion.Bastion_Totp))
+		os.Exit(0)
+	}
+	hostPtr := models.NewHostPtr()
+	hosts := hostPtr.GetAll()
+	if len(hosts) == 0 {
+		logs.Warn("Please Add Host Record!")
+		logs.Info("a -help")
+		os.Exit(1)
+	}
+
+	var host models.Hosts
+	host = GetHostByOption(hosts, hostPtr)
 
 	// 将选中主机热度加1，用于排序
 	go hostPtr.Sort(host, 1)
