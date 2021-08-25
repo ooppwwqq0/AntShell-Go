@@ -4,6 +4,7 @@ import (
 	"AntShell-Go/utils"
 	"database/sql"
 	"fmt"
+	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"time"
 )
@@ -102,7 +103,7 @@ func (h *HostsPtr) AddHost(host Hosts) (newHost Hosts) {
 	}
 	id, err := h.orm.Insert(&host)
 	if err != nil {
-		fmt.Println(err)
+		logs.Error(err)
 	}
 	host.Id = int(id)
 	return host

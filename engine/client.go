@@ -8,9 +8,9 @@ import (
 	"AntShell-Go/utils"
 	"bufio"
 	"fmt"
+	"github.com/astaxie/beego/logs"
 	"github.com/mitchellh/go-homedir"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/signal"
 	"strconv"
@@ -44,7 +44,7 @@ type ClientSSH struct {
 func (client *ClientSSH) Init(host models.Hosts, c config.Config) {
 	client.host = host
 	client.c = c
-	//创建sshp登陆配置
+	//创建ssh登陆配置
 	client.config = &ssh.ClientConfig{
 		Timeout:         time.Second, //ssh 连接time out 时间一秒钟, 如果ssh验证错误 会在一秒内返回
 		User:            client.host.User,
@@ -56,19 +56,18 @@ func (client *ClientSSH) Init(host models.Hosts, c config.Config) {
 func (client *ClientSSH) AuthKey() {
 	keyPath, _ := homedir.Expand(client.c.Default.Key_Path)
 	if keyPath != "" && utils.IsFile(keyPath) {
-
+		key, err := ioutil.ReadFile(keyPath)
+		if err != nil {
+			logs.Error("ssh key file read failed", err)
+		}
+		// Create the Signer for this private key.
+		signer, err := ssh.ParsePrivateKey(key)
+		if err != nil {
+			logs.Error("ssh key signer failed", err)
+		}
+		client.authMethod = ssh.PublicKeys(signer)
+		client.sshType = TypeKey
 	}
-	key, err := ioutil.ReadFile(keyPath)
-	if err != nil {
-		log.Fatal("ssh key file read failed", err)
-	}
-	// Create the Signer for this private key.
-	signer, err := ssh.ParsePrivateKey(key)
-	if err != nil {
-		log.Fatal("ssh key signer failed", err)
-	}
-	client.authMethod = ssh.PublicKeys(signer)
-	client.sshType = TypeKey
 }
 
 func (client *ClientSSH) GetSSHInfo() {
@@ -99,11 +98,11 @@ func (client *ClientSSH) GetSession() (session *ssh.Session, err error) {
 	addr := fmt.Sprintf("%s:%d", client.sshHost, client.sshPort)
 	c, err := ssh.Dial("tcp", addr, client.config)
 	if err != nil {
-		log.Fatal("创建ssh client 失败", err)
+		logs.Error("创建ssh client 失败", err)
 	}
 	session, err = c.NewSession()
 	if err != nil {
-		log.Fatal("创建ssh session 失败", err)
+		logs.Error("创建ssh session 失败", err)
 	}
 	return
 }
@@ -122,12 +121,12 @@ func (client *ClientSSH) Connection(sudo string, path string) {
 
 	// Request pseudo terminal
 	if err := session.RequestPty("xterm", h, w, modes); err != nil {
-		log.Fatal("request for pseudo terminal failed: ", err)
+		logs.Error("request for pseudo terminal failed: ", err)
 	}
 
 	ok, err := session.Chan.SendRequest("shell", true, nil)
 	if !ok || err != nil {
-		log.Println(err)
+		logs.Error(err)
 	}
 
 	defer session.Chan.Close()
@@ -184,7 +183,7 @@ func (client *ClientSSH) Connection(sudo string, path string) {
 	// 错误回收
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println(err)
+			logs.Error(err)
 		}
 	}()
 
@@ -250,26 +249,25 @@ func (client *ClientSSH) conn() {
 
 	// Request pseudo terminal
 	if err := session.RequestPty("xterm", h, w, modes); err != nil {
-		log.Fatal("request for pseudo terminal failed: ", err)
+		logs.Error("request for pseudo terminal failed: ", err)
 	}
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGWINCH)
 	go func() {
 		for {
-			sig := <-sigs
-			fmt.Println(sig)
+			<-sigs
 			w, h, _ := terminal.GetSize(fd)
 			session.WindowChange(h, w)
 		}
 	}()
 
 	if err := session.Shell(); err != nil {
-		log.Fatal("failed to start shell: ", err)
+		logs.Error("failed to start shell: ", err)
 	}
 
 	session.Wait()
-
 }
+
 func GetBastionPasswd(bastion config.BastionSection) (bastionPasswd string) {
 	// passwd缓存
 
@@ -300,7 +298,6 @@ func GetBastionPasswd(bastion config.BastionSection) (bastionPasswd string) {
 				break
 			}
 		}
-
 	}
 	return
 }
