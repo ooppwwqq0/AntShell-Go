@@ -2,6 +2,8 @@ package utils
 
 import (
 	"github.com/astaxie/beego/logs"
+	"github.com/mitchellh/go-homedir"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"runtime"
@@ -157,4 +159,35 @@ func IsIP(ipAddr string, mask bool) bool {
 		}
 	}
 	return len(qi) == l
+}
+
+func ReadByFile(path string) (context string, err error) {
+	realPath, _ := homedir.Expand(path)
+	if IsFile(realPath) {
+		var f []byte
+		f, err = ioutil.ReadFile(realPath)
+		if err != nil {
+			logs.Error(err)
+		}
+		context = string(f)
+	}
+	return
+}
+
+func CreateAndWrite(path string, context string) (err error) {
+	realPath, _ := homedir.Expand(path)
+	if IsFile(realPath) {
+		err = os.Remove(realPath)
+		if err != nil {
+			logs.Error(err)
+		}
+	}
+	f, err := os.Create(realPath)
+	if err != nil {
+		logs.Error(err)
+	}
+	f.WriteString(context)
+	f.Close()
+
+	return
 }

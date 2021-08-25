@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -24,6 +23,7 @@ const (
 	BastionOff = 0
 	TypeKey    = "authKey"
 	TypePasswd = "password"
+	TokenCache = "~/.antshell/cache"
 )
 
 type ClientSSH struct {
@@ -99,6 +99,7 @@ func (client *ClientSSH) GetSession() (session *ssh.Session, err error) {
 	c, err := ssh.Dial("tcp", addr, client.config)
 	if err != nil {
 		logs.Error("创建ssh client 失败", err)
+		os.Exit(1)
 	}
 	session, err = c.NewSession()
 	if err != nil {
@@ -166,9 +167,9 @@ func (client *ClientSSH) Connection(sudo string, path string) {
 			t := time.NewTimer(time.Millisecond * 100)
 			select {
 			case d := <-r:
-				if strings.HasPrefix(d, "cd") || strings.HasPrefix(d, "export") || strings.HasPrefix(d, "sudo") {
-					continue
-				}
+				//if strings.HasPrefix(d, "cd") || strings.HasPrefix(d, "export") || strings.HasPrefix(d, "sudo") {
+				//	continue
+				//}
 				fmt.Print(d)
 				t = time.NewTimer(time.Millisecond * 100)
 			case <-t.C:
@@ -268,23 +269,41 @@ func (client *ClientSSH) conn() {
 }
 
 func GetBastionPasswd(bastion config.BastionSection) (bastionPasswd string) {
-	// passwd缓存
 
-	//Todo 可能需要重新梳理这里的逻辑和优先级。目前简单处理部分场景
-	if bastion.Bastion_Passwd_Prefix != "" && bastion.Bastion_Totp != "" {
-		bastionPasswd = bastion.Bastion_Passwd_Prefix + utils.GetPasswdByTotp(bastion.Bastion_Totp)
-	} else if bastion.Bastion_Passwd_Prefix == "" && bastion.Bastion_Totp != "" {
-		var bastionPasswdPrefix string
-		for {
-			fmt.Print("PIN:")
-			fmt.Scanln(&bastionPasswdPrefix)
-			if bastionPasswdPrefix != "" {
-				break
+	if bastion.Bastion_Totp != "" {
+		// token 缓存
+		cacheToken, _ := utils.ReadByFile(TokenCache)
+		var token string
+		if cacheToken != "" {
+			for {
+				token = utils.GetPasswdByTotp(bastion.Bastion_Totp)
+				if cacheToken != token {
+					break
+				}
+				logs.Info("等待动态token更新...")
+				time.Sleep(time.Second * 5)
 			}
+		} else {
+			token = utils.GetPasswdByTotp(bastion.Bastion_Totp)
 		}
-		bastionPasswd = bastionPasswdPrefix + utils.GetPasswdByTotp(bastion.Bastion_Totp)
-	} else if bastion.Bastion_Passwd != "" {
-		bastionPasswd = bastion.Bastion_Passwd_Prefix + bastion.Bastion_Passwd
+
+		go utils.CreateAndWrite(TokenCache, token)
+		if bastion.Bastion_Passwd_Prefix != "" {
+			bastionPasswd = bastion.Bastion_Passwd_Prefix + token
+		} else {
+			var bastionPasswdPrefix string
+			for {
+				fmt.Print(fmt.Sprintf(
+					"%s@%s:%s's PIN:******",
+					bastion.Bastion_User, bastion.Bastion_Host, bastion.Bastion_Port,
+				))
+				fmt.Scanln(&bastionPasswdPrefix)
+				if bastionPasswdPrefix != "" {
+					break
+				}
+			}
+			bastionPasswd = bastionPasswdPrefix + token
+		}
 	} else {
 		msg := fmt.Sprintf(
 			"%s@%s:%s's password: PIN:****** + Token:",
