@@ -135,10 +135,12 @@ func (menu *Classic) View(argv interface{}, num int, search string, mode int, cu
 	hostPtr := models.NewHostPtr()
 
 	// 无变量参数
-	if n, err := strconv.Atoi(argv.(string)); err == nil {
-		num = utils.IF(n != 0, n, num).(int)
-	} else {
-		hostPtr.SetSearch(argv.(string))
+	if argv != nil {
+		if n, err := strconv.Atoi(argv.(string)); err == nil {
+			num = utils.IF(n != 0, n, num).(int)
+		} else {
+			hostPtr.SetSearch(argv.(string))
+		}
 	}
 
 	// 根据主机记录以及无变量参数尝试快速找到主机记录，或筛选主机记录

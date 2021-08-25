@@ -33,7 +33,8 @@ type DefaultSection struct {
 	Banner_Color string `ini:"BANNER_COLOR"`
 	Debug        string `ini:"DEBUG"`
 	Page         string `ini:"PAGE"`
-	Engine       string `ini:"ENGINE"`
+	Backup_Dir   string `ini:"BACKUP_DIR"`
+	Banner       string `ini:"BANNER"`
 }
 
 type UserSection struct {

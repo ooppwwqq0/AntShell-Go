@@ -96,5 +96,5 @@ func PrintInfo(index int, host models.Hosts) (infoFormat string) {
 
 func BannerPrint(c config.Config) {
 	utils.Clear()
-	ColorMsg(utils.Banner, ColorCode[c.Default.Banner_Color], true, false, NewLineEnd)
+	ColorMsg(utils.GetBanner(c.Default.Banner), ColorCode[c.Default.Banner_Color], true, false, NewLineEnd)
 }

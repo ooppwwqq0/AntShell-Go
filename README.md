@@ -40,9 +40,11 @@
 * 常用主机优先级 done
 * 本地主机记录排序 done
   * 根据排序字段进行排序展示 done
+* 多个banner可选，有default策略、random策略 done
+* 自定义banner
 * 堡垒机密码失效等待
 * 本地数据备份
-* 多个banner可选，自定义banner
+
 
 * 获取主机信息插件
 * 新的UI界面：webUI、TUI，GUI
