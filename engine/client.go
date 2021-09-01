@@ -275,13 +275,20 @@ func GetBastionPasswd(bastion config.BastionSection) (bastionPasswd string) {
 		cacheToken, _ := utils.ReadByFile(TokenCache)
 		var token string
 		if cacheToken != "" {
+			var n int
 			for {
 				token = utils.GetPasswdByTotp(bastion.Bastion_Totp)
 				if cacheToken != token {
 					break
 				}
-				logs.Info("等待动态token更新...")
-				time.Sleep(time.Second * 5)
+				if n%5 == 0 {
+					logs.Info("等待动态token更新...")
+				}
+				n++
+				time.Sleep(time.Second * 1)
+			}
+			if n != 0 {
+				logs.Info("动态token已更新...，已等待：", n)
 			}
 		} else {
 			token = utils.GetPasswdByTotp(bastion.Bastion_Totp)
