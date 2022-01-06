@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Option struct {
@@ -98,10 +99,12 @@ func init() {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, `AntShell version: AntShell/1.0
+	fmt.Fprintf(os.Stderr, `AntShell version: %s/%s
+GitHub: %s
 Usage: antshell|a [ -h | -version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ -A ] [ -B ]
         [ -e | -d ip | -sort | -a ip [-name tag | -user root | -passwd *** | -port 22 | -sudo root | -path /tmp] ]
-`)
+`, utils.ProgramName, utils.Version, utils.GitHub)
+
 	flag.PrintDefaults()
 	fmt.Fprintf(os.Stderr, `
 # Add host record	
@@ -135,22 +138,23 @@ Usage: antshell|a [ -h | -version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ -
 	a app01 -n 2
 	a -s 10.0.0.1 -n 1
 	a -s app01 -n 2
-GitHub: %s
-`, utils.GitHub)
+`)
 
 }
 
 func GetHostByConfig(c config.Config) (host models.Hosts) {
 	defaultPort, _ := strconv.Atoi(c.User.Port)
 	host = models.Hosts{
-		Ip:      option.Host.Add,
-		Sudo:    option.Host.Sudo,
-		Name:    utils.IF(option.Host.Name != "", option.Host.Name, option.Host.Add).(string),
-		User:    utils.IF(option.Host.User != "", option.Host.User, c.User.UserName).(string),
-		Passwd:  utils.IF(option.Host.Passwd != "", option.Host.Passwd, c.User.Password).(string),
-		Port:    utils.IF(option.Host.Port != 0, option.Host.Port, defaultPort).(int),
-		Bastion: utils.IF(option.Manager.Bastion, engine.BastionOn, engine.BastionOff).(int),
-		Path:    utils.IF(option.Host.Path != "", option.Host.Path, c.User.Path).(string),
+		Ip:       option.Host.Add,
+		Sudo:     option.Host.Sudo,
+		Name:     utils.IF(option.Host.Name != "", option.Host.Name, option.Host.Add).(string),
+		User:     utils.IF(option.Host.User != "", option.Host.User, c.User.UserName).(string),
+		Passwd:   utils.IF(option.Host.Passwd != "", option.Host.Passwd, c.User.Password).(string),
+		Port:     utils.IF(option.Host.Port != 0, option.Host.Port, defaultPort).(int),
+		Bastion:  utils.IF(option.Manager.Bastion, engine.BastionOn, engine.BastionOff).(int),
+		Path:     utils.IF(option.Host.Path != "", option.Host.Path, c.User.Path).(string),
+		CreateAt: time.Now(),
+		UpdateAt: time.Now(),
 	}
 	return
 }
@@ -225,11 +229,12 @@ func GetHostByUser(host models.Hosts) (newHost models.Hosts) {
 	return
 }
 
-func GetHostByOption(hosts []models.Hosts, hostPtr *models.HostsPtr) (host models.Hosts) {
+func GetHostByOption(hostPtr *models.HostsPtr) (host models.Hosts) {
 	m := menu.New(c)
 
 	switch {
 	case option.Manager.List:
+		hosts := hostPtr.GetAll()
 		menu.BannerPrint(c)
 		m.Print(hosts, option.Manager.Mode, menu.DefaultLimit, menu.DefaultSize, false)
 		os.Exit(0)
@@ -240,15 +245,14 @@ func GetHostByOption(hosts []models.Hosts, hostPtr *models.HostsPtr) (host model
 		}
 		host = GetHostByConfig(c)
 		host = hostPtr.AddHost(host)
+		option.Manager.Argv = option.Host.Add
 	}
-	if host.Id == 0 {
-		customPage, _ := strconv.Atoi(c.Default.Page)
-		host = m.View(
-			option.Manager.Argv,
-			option.Manager.Num, option.Manager.Search,
-			option.Manager.Mode, customPage,
-		)
-	}
+	customPage, _ := strconv.Atoi(c.Default.Page)
+	host = m.View(
+		option.Manager.Argv,
+		option.Manager.Num, option.Manager.Search,
+		option.Manager.Mode, customPage,
+	)
 
 	switch {
 	case option.Host.Edit:
@@ -297,15 +301,14 @@ func main() {
 		os.Exit(0)
 	}
 	hostPtr := models.NewHostPtr()
-	hosts := hostPtr.GetAll()
-	if len(hosts) == 0 {
+	if hostPtr.GetCount() == 0 && option.Host.Add == "" {
 		logs.Warn("Please Add Host Record!")
 		logs.Info("a -help")
 		os.Exit(1)
 	}
 
 	var host models.Hosts
-	host = GetHostByOption(hosts, hostPtr)
+	host = GetHostByOption(hostPtr)
 
 	// 将选中主机热度加1，用于排序
 	go hostPtr.Sort(host, 1)

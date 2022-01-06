@@ -58,6 +58,12 @@ func (h *HostsPtr) GetAll() (rows []Hosts) {
 	return
 }
 
+// 获取数据数量
+func (h *HostsPtr) GetCount() (count int64) {
+	count, _ = h.query.Count()
+	return
+}
+
 // 搜索主机记录
 func (h *HostsPtr) Search(search string, blankReturn bool, match bool) (rows []Hosts) {
 	h.SetSearch(search)
