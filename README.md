@@ -104,75 +104,76 @@ a num | a name | a ip
 # python
 a -l  0.32s user 0.10s system 96% cpu 0.432 total
 # go
-a -l  0.01s user 0.01s system 63% cpu 0.035 total
+a -l  0.10s user 0.03s system 79% cpu 0.162 total
 ```
 
 ## HELP
 
 ```
-AntShell version: AntShell/1.0
+AntShell version: AntShell/1.2
+GitHub: https://github.com/ooppwwqq0/AntShell-Go
 Usage: antshell|a [ -h | -version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ -A ] [ -B ]
         [ -e | -d ip | -sort | -a ip [-name tag | -user root | -passwd *** | -port 22 | -sudo root | -path /tmp] ]
-  -B	堡垒机模式
+  -B    堡垒机模式
   -a string
-    	添加主机信息并登陆
-  -d	删除主机信息并退出
-  -e	编辑主机信息
-  -l	输出主机列表并退出
+        添加主机信息并登陆
+  -d    删除主机信息并退出
+  -e    编辑主机信息
+  -l    输出主机列表并退出
   -m int
-    	列表显示列数1-5
+        列表显示列数1-5
   -n int
-    	选择连接的主机编号
+        选择连接的主机编号
   -name string
-    	本地主机别名
+        本地主机别名
   -passwd string
-    	密码
+        密码
   -path string
-    	初始目录
+        初始目录
   -port int
-    	端口
+        端口
   -s string
-    	模糊匹配主机信息
+        模糊匹配主机信息
   -sort
-    	排序
+        排序
   -sudo string
-    	指定sudo用户
+        指定sudo用户
   -totp
-    	打印 totp
+        打印 totp
   -user string
-    	登录主机用户名
+        登录主机用户名
   -version
-    	打印版本信息并退出
+        打印版本信息并退出
 
-# Add host record
-	a -a 10.0.0.1
-	a -a 10.0.0.1 -name app01
-	a -a 10.0.0.1 -name app01 -passwd 123456
-	a -a 10.0.0.1 -name app01 -user root -passwd 123456
-	a -a 10.0.0.1 -name app01 -user root -passwd 123456 -port 22022
-	a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -sudo root
-	a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -path /tmp
-	a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -port 22022 -sudo root -B
+# Add host record       
+        a -a 10.0.0.1
+        a -a 10.0.0.1 -name app01
+        a -a 10.0.0.1 -name app01 -passwd 123456
+        a -a 10.0.0.1 -name app01 -user root -passwd 123456 
+        a -a 10.0.0.1 -name app01 -user root -passwd 123456 -port 22022
+        a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -sudo root
+        a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -path /tmp
+        a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -port 22022 -sudo root -B
 # Delete host record
-	a -d 10.0.0.1
-	a -d app01
+        a -d 10.0.0.1
+        a -d app01
 # Edit host record
-	a -e
-	a -e -s 10.0.0.1
-	a -e -s app01 -n 2
+        a -e
+        a -e -s 10.0.0.1
+        a -e -s app01 -n 2
 # List host record
-	a -l
-	a -l -m 2
+        a -l
+        a -l -m 2
 # Sort host record +10
-	a -sort
-	a -sort -n 1
-	a -sort app01 -n 1
+        a -sort
+        a -sort -n 1
+        a -sort app01 -n 1
 # Login host
-	a
-	a 2
-	a app01
-	a 10.0.0.0.1
-	a app01 -n 2
-	a -s 10.0.0.1 -n 1
-	a -s app01 -n 2
+        a
+        a 2
+        a app01
+        a 10.0.0.0.1
+        a app01 -n 2
+        a -s 10.0.0.1 -n 1
+        a -s app01 -n 2
 ```

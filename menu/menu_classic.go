@@ -101,7 +101,7 @@ func (menu *Classic) Print(hosts []models.Hosts, customModeNum int, limit int, o
 			rem := index % mode
 			if mode == SingleMode || index+1 == hostLen {
 				fmt.Println(h)
-			} else if rem == 1 {
+			} else if rem == mode-1 {
 				fmt.Println(h)
 			} else if rem < mode {
 				fmt.Print(h, BlankEnd)
