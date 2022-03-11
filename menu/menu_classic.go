@@ -152,7 +152,8 @@ func (menu *Classic) View(argv interface{}, num int, search string, mode int, cu
 	if num == 0 {
 		BannerPrint(menu.c)
 		menu.Print(hosts, mode, DefaultLimit, DefaultSize, false)
-		limit, offset := 0, utils.IF(customPage != 0, customPage, DefaultSize).(int)
+		// 分页初始值应该为1，为0会导致初始页变成最后一页
+		limit, offset := 1, utils.IF(customPage != 0, customPage, DefaultSize).(int)
 		pageMax := int(math.Ceil(float64(len(hosts)) / float64(offset)))
 
 		var input string

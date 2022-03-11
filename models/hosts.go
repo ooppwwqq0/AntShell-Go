@@ -69,6 +69,8 @@ func (h *HostsPtr) Search(search string, blankReturn bool, match bool) (rows []H
 	h.SetSearch(search)
 	// 判断搜索内容是否是精确ip，如果是精确ip，会使用精确匹配模式
 	match = utils.IF(utils.IsIP(search, true), true, match).(bool)
+	// 每次查询应该清空主机列表，防止上次结果影响本次查询
+	h.Rows = []Hosts{}
 	if len(h.search) != 0 {
 		cond := orm.NewCondition()
 		if match {
@@ -92,6 +94,8 @@ func (h *HostsPtr) Search(search string, blankReturn bool, match bool) (rows []H
 	}
 	if len(rows) == 0 && !blankReturn {
 		rows = h.GetAll()
+		// 确定查询条件无法获取到主机记录，应该清空查询列表
+		h.ClearSearch()
 		if len(rows) == 0 {
 			rows = []Hosts{}
 		}
