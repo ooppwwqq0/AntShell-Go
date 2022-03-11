@@ -53,7 +53,7 @@ func (client *ClientSSH) Init(host models.Hosts, c config.Config) {
 	}
 }
 
-func (client *ClientSSH) AuthKey() {
+func (client *ClientSSH) AuthKey() bool {
 	keyPath, _ := homedir.Expand(client.c.Default.Key_Path)
 	if keyPath != "" && utils.IsFile(keyPath) {
 		key, err := ioutil.ReadFile(keyPath)
@@ -66,8 +66,9 @@ func (client *ClientSSH) AuthKey() {
 			logs.Error("ssh key signer failed", err)
 		}
 		client.authMethod = ssh.PublicKeys(signer)
-		client.sshType = TypeKey
+		return true
 	}
+	return false
 }
 
 func (client *ClientSSH) GetSSHInfo() {
@@ -78,19 +79,16 @@ func (client *ClientSSH) GetSSHInfo() {
 		client.sshUser = bastion.Bastion_User
 		client.sshPassword = GetBastionPasswd(client.c.Bastion)
 		client.config.User = bastion.Bastion_User
-		client.sshType = TypePasswd
 	} else {
 		client.sshHost = client.host.Ip
 		client.sshPort = client.host.Port
 		client.sshUser = client.host.User
 		client.sshPassword = client.host.Passwd
-		client.AuthKey()
+		if client.AuthKey() {
+			client.config.Auth = append(client.config.Auth, client.authMethod)
+		}
 	}
-	if client.sshType == TypePasswd {
-		client.config.Auth = []ssh.AuthMethod{ssh.Password(client.sshPassword)}
-	} else {
-		client.config.Auth = []ssh.AuthMethod{client.authMethod}
-	}
+	client.config.Auth = append(client.config.Auth, ssh.Password(client.sshPassword))
 }
 
 func (client *ClientSSH) GetSession() (session *ssh.Session, err error) {
