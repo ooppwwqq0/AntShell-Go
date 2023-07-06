@@ -154,6 +154,7 @@ func GetHostByConfig(c config.Config) (host models.Hosts) {
 		Passwd:   utils.IF(option.Host.Passwd != "", option.Host.Passwd, c.User.Password).(string),
 		Port:     utils.IF(option.Host.Port != 0, option.Host.Port, defaultPort).(int),
 		Bastion:  utils.IF(option.Manager.Bastion, engine.BastionOn, engine.BastionOff).(int),
+		Type:     option.Host.Type,
 		Path:     utils.IF(option.Host.Path != "", option.Host.Path, c.User.Path).(string),
 		CreateAt: time.Now(),
 		UpdateAt: time.Now(),
