@@ -31,6 +31,7 @@ type HostOption struct {
 	Sudo   string
 	Path   string
 	Sort   bool
+	Type   string
 }
 
 type ManagerOption struct {
@@ -82,6 +83,7 @@ func init() {
 	flag.IntVar(&option.Host.Port, "port", 0, lang["port"])
 	flag.StringVar(&option.Host.Sudo, "sudo", "", lang["sudo"])
 	flag.StringVar(&option.Host.Path, "path", "", lang["path"])
+	flag.StringVar(&option.Host.Type, "type", "", lang["type"])
 	flag.BoolVar(&option.Host.Sort, "sort", false, lang["sort"])
 
 	flag.Usage = usage
@@ -217,6 +219,8 @@ func GetHostByUser(host models.Hosts) (newHost models.Hosts) {
 		optionBastion := utils.IF(option.Manager.Bastion, engine.BastionOn, engine.BastionOff).(int)
 		newHost.Bastion = GetUserInputInt("Bastion", optionBastion, host.Bastion, true)
 		newHost.Path = GetUserInputStr("Path", option.Host.Path, host.Path, false)
+		// 新增类型修改
+		newHost.Type = GetUserInputStr("Type", option.Host.Type, host.Type, true)
 
 		menu.ColorMsg("Confirm [ y|n ] >> ", menu.GREEN, true, false, "")
 		fmt.Scanln(&input)
@@ -231,10 +235,20 @@ func GetHostByUser(host models.Hosts) (newHost models.Hosts) {
 
 func GetHostByOption(hostPtr *models.HostsPtr) (host models.Hosts) {
 	m := menu.New(c)
+	customPage, _ := strconv.Atoi(c.Default.Page)
 
 	switch {
 	case option.Manager.List:
-		hosts := hostPtr.GetAll()
+		// 无变量参数
+		var num int
+		if option.Manager.Argv != nil {
+			if n, err := strconv.Atoi(option.Manager.Argv.(string)); err == nil {
+				num = utils.IF(n != 0, n, num).(int)
+			} else {
+				hostPtr.SetSearch(option.Manager.Argv.(string))
+			}
+		}
+		hosts := hostPtr.Search(option.Manager.Search, false, false)
 		menu.BannerPrint(c)
 		m.Print(hosts, option.Manager.Mode, menu.DefaultLimit, menu.DefaultSize, false)
 		os.Exit(0)
@@ -247,7 +261,6 @@ func GetHostByOption(hostPtr *models.HostsPtr) (host models.Hosts) {
 		host = hostPtr.AddHost(host)
 		option.Manager.Argv = option.Host.Add
 	}
-	customPage, _ := strconv.Atoi(c.Default.Page)
 	host = m.View(
 		option.Manager.Argv,
 		option.Manager.Num, option.Manager.Search,

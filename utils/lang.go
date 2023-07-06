@@ -39,6 +39,7 @@ func init() {
 			"totp":    "打印 totp",
 			"path":    "初始目录",
 			"sort":    "排序",
+			"type":    "堡垒机类型",
 		},
 		"en": {
 			"init":    "Initialize the configuration file and the database",
@@ -72,6 +73,7 @@ func init() {
 			"totp":    "print totp",
 			"path":    "default path",
 			"sort":    "sort",
+			"type":    "bastion type",
 		},
 	}
 }

@@ -23,6 +23,7 @@ type Hosts struct {
 	Port     int
 	Sudo     string
 	Bastion  int
+	Type     string
 	Path     string
 	CreateAt time.Time
 	UpdateAt time.Time

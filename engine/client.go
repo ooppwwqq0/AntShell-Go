@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -74,7 +75,19 @@ func (client *ClientSSH) AuthKey() bool {
 func (client *ClientSSH) GetSSHInfo() {
 	if client.host.Bastion == BastionOn {
 		bastion := client.c.Bastion
-		client.sshHost = bastion.Bastion_Host
+		// 根据设置的堡垒机类型来选择堡垒机地址
+		var bastionHost string
+		if client.host.Type == "" {
+			bastionHost = bastion.Bastion_Host
+		} else {
+			b, ok := client.c.Bastion_List[strings.ToUpper(client.host.Type)]
+			if ok {
+				bastionHost = b
+			} else {
+				bastionHost = bastion.Bastion_Host
+			}
+		}
+		client.sshHost = bastionHost
 		client.sshPort, _ = strconv.Atoi(bastion.Bastion_Port)
 		client.sshUser = bastion.Bastion_User
 		client.sshPassword = GetBastionPasswd(client.c.Bastion)
