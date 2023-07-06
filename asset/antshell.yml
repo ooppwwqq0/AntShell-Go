@@ -25,3 +25,6 @@ BASTION_USER: wangping
 BASTION_PASSWD_PREFIX: ""
 BASTION_PASSWD: ""
 BASTION_TOTP: ""
+BASTION_LIST:
+  PROD: baoleiji-prod.isme.pub
+  DEV: baoleiji-dev.isme.pub

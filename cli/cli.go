@@ -1,0 +1,331 @@
+package cli
+
+import (
+	"AntShell-Go/config"
+	"AntShell-Go/engine"
+	"AntShell-Go/menu"
+	"AntShell-Go/models"
+	"AntShell-Go/utils"
+	"flag"
+	"fmt"
+	"github.com/astaxie/beego/logs"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+)
+
+type Option struct {
+	Host    HostOption
+	Manager ManagerOption
+}
+
+type HostOption struct {
+	Add    string
+	Edit   bool
+	Delete bool
+	Name   string
+	User   string
+	Passwd string
+	Port   int
+	Sudo   string
+	Path   string
+	Sort   bool
+	Type   string
+}
+
+type ManagerOption struct {
+	List    bool
+	Mode    int
+	Num     int
+	Search  string
+	Bastion bool
+	Version bool
+	Argv    interface{}
+	Totp    bool
+}
+
+var (
+	c      config.Config
+	option Option
+	client engine.ClientSSH
+)
+
+func init() {
+	var err error
+	c, err = config.LoadConfig()
+	if err != nil {
+		config.InitConfig()
+		c, err = config.LoadConfig()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	}
+
+	models.Init(c)
+
+	lang := utils.LANG[c.Default.LangSet]
+	flag.BoolVar(&option.Manager.List, "l", false, lang["list"])
+	flag.IntVar(&option.Manager.Mode, "m", 0, lang["mode"])
+	flag.IntVar(&option.Manager.Num, "n", 0, lang["num"])
+	flag.StringVar(&option.Manager.Search, "s", "", lang["search"])
+	flag.BoolVar(&option.Manager.Bastion, "B", false, lang["bastion"])
+	flag.BoolVar(&option.Manager.Version, "version", false, lang["version"])
+	flag.BoolVar(&option.Manager.Totp, "totp", false, lang["totp"])
+
+	flag.StringVar(&option.Host.Add, "a", "", lang["add"])
+	flag.BoolVar(&option.Host.Edit, "e", false, lang["edit"])
+	flag.BoolVar(&option.Host.Delete, "d", false, lang["delete"])
+	flag.StringVar(&option.Host.Name, "name", "", lang["name"])
+	flag.StringVar(&option.Host.User, "user", "", lang["user"])
+	flag.StringVar(&option.Host.Passwd, "passwd", "", lang["passwd"])
+	flag.IntVar(&option.Host.Port, "port", 0, lang["port"])
+	flag.StringVar(&option.Host.Sudo, "sudo", "", lang["sudo"])
+	flag.StringVar(&option.Host.Path, "path", "", lang["path"])
+	flag.StringVar(&option.Host.Type, "type", "", lang["type"])
+	flag.BoolVar(&option.Host.Sort, "sort", false, lang["sort"])
+
+	flag.Usage = usage
+	flag.Parse()
+	if len(flag.Args()) != 0 {
+		option.Manager.Argv = flag.Args()[0]
+		/*
+			当flag遇到non-flag时会停止继续解析，将从non-flag开始的所有参数认定为non-flag
+			这时所有后面的参数都不能正常运行
+			通过源码分析可以发现flag.Parse实际是执行了flag.CommandLine.Parse方法
+			那我们就可以通过以下方法让其他参数继续解析
+		*/
+		flag.CommandLine.Parse(flag.Args()[1:])
+	}
+}
+
+func usage() {
+	fmt.Fprintf(os.Stderr, `AntShell version: %s/%s
+GitHub: %s
+Usage: antshell|a [ -h | -version ] [-l [-m 2] ] [ v | -n 1 | -s 'ip|name' ] [ -A ] [ -B ]
+        [ -e | -d ip | -sort | -a ip [-name tag | -user root | -passwd *** | -port 22 | -sudo root | -path /tmp] ]
+`, utils.ProgramName, utils.Version, utils.GitHub)
+
+	flag.PrintDefaults()
+	fmt.Fprintf(os.Stderr, `
+# Add host record	
+	a -a 10.0.0.1
+	a -a 10.0.0.1 -name app01
+	a -a 10.0.0.1 -name app01 -passwd 123456
+	a -a 10.0.0.1 -name app01 -user root -passwd 123456 
+	a -a 10.0.0.1 -name app01 -user root -passwd 123456 -port 22022
+	a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -sudo root
+	a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -path /tmp
+	a -a 10.0.0.1 -name app01 -user ubuntu -passwd 123456 -port 22022 -sudo root -B
+# Delete host record
+	a -d 10.0.0.1
+	a -d app01
+# Edit host record
+	a -e
+	a -e -s 10.0.0.1
+	a -e -s app01 -n 2
+# List host record
+	a -l
+	a -l -m 2
+# Sort host record +10
+	a -sort
+	a -sort -n 1
+	a -sort app01 -n 1
+# Login host
+	a
+	a 2
+	a app01
+	a 10.0.0.0.1
+	a app01 -n 2
+	a -s 10.0.0.1 -n 1
+	a -s app01 -n 2
+`)
+
+}
+
+func GetHostByConfig(c config.Config) (host models.Hosts) {
+	defaultPort, _ := strconv.Atoi(c.User.Port)
+	host = models.Hosts{
+		Ip:       option.Host.Add,
+		Sudo:     option.Host.Sudo,
+		Name:     utils.IF(option.Host.Name != "", option.Host.Name, option.Host.Add).(string),
+		User:     utils.IF(option.Host.User != "", option.Host.User, c.User.UserName).(string),
+		Passwd:   utils.IF(option.Host.Passwd != "", option.Host.Passwd, c.User.Password).(string),
+		Port:     utils.IF(option.Host.Port != 0, option.Host.Port, defaultPort).(int),
+		Bastion:  utils.IF(option.Manager.Bastion, engine.BastionOn, engine.BastionOff).(int),
+		Path:     utils.IF(option.Host.Path != "", option.Host.Path, c.User.Path).(string),
+		CreateAt: time.Now(),
+		UpdateAt: time.Now(),
+	}
+	return
+}
+
+func GetUserInputStr(title string, value string, defaultValue string, isNone bool) (newValue string) {
+	/*
+		编辑主机信息用户交互
+		title: 显示标题
+		value: 命令行参数值，优先于default值
+		default: 默认值，原数据库中数据
+		vType: 指定用户输入值
+		isNone: 用户输入是否可为空，默认False，用户输入为空时使用默认值
+	*/
+	msg := menu.ColorMsg("", menu.BLUEL, false, false, "")
+
+	var input string
+	fmt.Printf(msg, fmt.Sprintf("New %s [defalut: %s] [new: %s] >> ", title, defaultValue, value))
+	fmt.Scanln(&input)
+	if input == "" {
+		newValue = utils.IF(value != "", value, defaultValue).(string)
+	} else {
+		newValue = input
+	}
+
+	return
+}
+
+func GetUserInputInt(title string, value int, defaultValue int, isNone bool) (newValue int) {
+	/*
+		编辑主机信息用户交互
+		title: 显示标题
+		value: 命令行参数值，优先于default值
+		default: 默认值，原数据库中数据
+		vType: 指定用户输入值
+		isNone: 用户输入是否可为空，默认False，用户输入为空时使用默认值
+	*/
+	msg := menu.ColorMsg("", menu.BLUEL, false, false, "")
+
+	var input int
+	valueStr := utils.IF(value != 0 && !isNone, strconv.Itoa(value), "").(string)
+	fmt.Printf(msg, fmt.Sprintf("New %s [defalut: %d] [new: %s] >> ", title, defaultValue, valueStr))
+	fmt.Scanln(&input)
+	if input == 0 {
+		newValue = utils.IF(value != 0 && !isNone, value, defaultValue).(int)
+	} else {
+		newValue = input
+	}
+	return
+}
+
+func GetHostByUser(host models.Hosts) (newHost models.Hosts) {
+	for {
+		var input string
+		newHost = host
+		newHost.Name = GetUserInputStr("Name", option.Host.Name, host.Name, false)
+		newHost.User = GetUserInputStr("User", option.Host.User, host.User, false)
+		newHost.Passwd = GetUserInputStr("Passwd", option.Host.Passwd, host.Passwd, false)
+		newHost.Port = GetUserInputInt("Port", option.Host.Port, host.Port, false)
+		newHost.Sudo = GetUserInputStr("Sudo", option.Host.Sudo, host.Sudo, false)
+		optionBastion := utils.IF(option.Manager.Bastion, engine.BastionOn, engine.BastionOff).(int)
+		newHost.Bastion = GetUserInputInt("Bastion", optionBastion, host.Bastion, true)
+		newHost.Path = GetUserInputStr("Path", option.Host.Path, host.Path, false)
+		// 新增类型修改
+		newHost.Type = GetUserInputStr("Type", option.Host.Type, host.Type, true)
+
+		menu.ColorMsg("Confirm [ y|n ] >> ", menu.GREEN, true, false, "")
+		fmt.Scanln(&input)
+
+		if strings.ToLower(input) == "y" {
+			break
+		}
+
+	}
+	return
+}
+
+func GetHostByOption(hostPtr *models.HostsPtr) (host models.Hosts) {
+	m := menu.New(c)
+	customPage, _ := strconv.Atoi(c.Default.Page)
+
+	switch {
+	case option.Manager.List:
+		// 无变量参数
+		var num int
+		if option.Manager.Argv != nil {
+			if n, err := strconv.Atoi(option.Manager.Argv.(string)); err == nil {
+				num = utils.IF(n != 0, n, num).(int)
+			} else {
+				hostPtr.SetSearch(option.Manager.Argv.(string))
+			}
+		}
+		hosts := hostPtr.Search(option.Manager.Search, false, false)
+		menu.BannerPrint(c)
+		m.Print(hosts, option.Manager.Mode, menu.DefaultLimit, menu.DefaultSize, false)
+		os.Exit(0)
+	case option.Host.Add != "":
+		if !utils.IsIP(option.Host.Add, true) {
+			menu.ColorMsg("wrong ip: "+option.Host.Add, menu.RED, true, false, "\n")
+			os.Exit(1)
+		}
+		host = GetHostByConfig(c)
+		host = hostPtr.AddHost(host)
+		option.Manager.Argv = option.Host.Add
+	}
+	host = m.View(
+		option.Manager.Argv,
+		option.Manager.Num, option.Manager.Search,
+		option.Manager.Mode, customPage,
+	)
+
+	switch {
+	case option.Host.Edit:
+		host = GetHostByUser(host)
+		_, err := hostPtr.UpdateHost(host)
+		if err != nil {
+			os.Exit(1)
+		}
+	case option.Host.Delete:
+		var input string
+		for {
+			msg := "Confirm [ y|n ] >> "
+			fmt.Printf(menu.ColorMsg("", menu.GREEN, false, false, ""), msg)
+			fmt.Scanln(&input)
+			switch strings.ToLower(input) {
+			case "y":
+				hostPtr.DelHost(host)
+				menu.ColorMsg(fmt.Sprintf("Delete IP: %s Success!", host.Ip), menu.BLUE, true, false, "\n")
+				os.Exit(0)
+			case "n":
+				os.Exit(0)
+			}
+		}
+	}
+
+	if option.Host.Sort {
+		hostPtr.Sort(host, 10)
+		logs.Info(
+			fmt.Sprintf("主机记录：%s(%s@%s:%d)，排序已上升！",
+				host.Name, utils.IF(host.Sudo != "", host.Sudo, host.User).(string), host.Ip, host.Port,
+			),
+		)
+		os.Exit(0)
+	}
+	return
+}
+
+func Run() {
+	if option.Manager.Version {
+		fmt.Printf("%s %s\n", utils.ProgramName, utils.Version)
+		os.Exit(0)
+	}
+
+	if option.Manager.Totp {
+		fmt.Println(utils.GetPasswdByTotp(c.Bastion.Bastion_Totp))
+		os.Exit(0)
+	}
+	hostPtr := models.NewHostPtr()
+	if hostPtr.GetCount() == 0 && option.Host.Add == "" {
+		logs.Warn("Please Add Host Record!")
+		logs.Info("a -help")
+		os.Exit(1)
+	}
+
+	var host models.Hosts
+	host = GetHostByOption(hostPtr)
+
+	// 将选中主机热度加1，用于排序
+	go hostPtr.Sort(host, 1)
+	client.Init(host, c)
+	client.Connection(option.Host.Sudo, option.Host.Path)
+	os.Exit(0)
+}

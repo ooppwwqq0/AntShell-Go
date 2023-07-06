@@ -1,7 +1,6 @@
 package config
 
 import (
-	"AntShell-Go/asset"
 	"AntShell-Go/utils"
 	"errors"
 	"github.com/astaxie/beego/logs"
@@ -21,9 +20,10 @@ const (
 )
 
 type Config struct {
-	Default DefaultSection `ini:"default"`
-	User    UserSection    `ini:"user"`
-	Bastion BastionSection `ini:"BASTION"`
+	Default      DefaultSection    `ini:"default"`
+	User         UserSection       `ini:"user"`
+	Bastion      BastionSection    `ini:"bastion"`
+	Bastion_List map[string]string `ini:"bastion_list"`
 }
 
 type DefaultSection struct {
@@ -102,6 +102,6 @@ func InitConfig() {
 	}
 	if !utils.IsFile(path.Join(defaultPath, ConfName)) {
 		logs.Info("创建默认配置文件:", path.Join(defaultPath, ConfName))
-		asset.RestoreAssets(defaultPath, ConfName)
+		RestoreAssets(defaultPath, ConfName)
 	}
 }
