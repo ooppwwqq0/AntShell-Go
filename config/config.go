@@ -102,6 +102,7 @@ func InitConfig() {
 	}
 	if !utils.IsFile(path.Join(defaultPath, ConfName)) {
 		logs.Info("创建默认配置文件:", path.Join(defaultPath, ConfName))
-		RestoreAssets(defaultPath, ConfName)
+		err := RestoreAssets(defaultPath, ConfName)
+		logs.Error(err)
 	}
 }
